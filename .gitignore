@@ -153,4 +153,4 @@ logs/
 
 # Temporary files
 tmp/
-temp/ 
+temp/ *-credentials.json
