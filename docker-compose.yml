@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  complaint-api:
+    build: .
+    container_name: complaint-api
+    ports:
+      - "8000:8000"
+    environment:
+      - SENTIMENT_API_KEY=${SENTIMENT_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SPAM_API_KEY=${SPAM_API_KEY}
+      - DATABASE_URL=sqlite:///./complaints.db
+      - HOST=0.0.0.0
+      - PORT=8000
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: complaint-n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin123
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - GOOGLE_SHEETS_SPREADSHEET_ID=${GOOGLE_SHEETS_SPREADSHEET_ID}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./google-credentials.json:/home/node/.n8n/google-credentials.json:ro
+    restart: unless-stopped
+    depends_on:
+      - complaint-api
+
+volumes:
+  n8n_data: 
