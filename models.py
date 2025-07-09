@@ -13,6 +13,7 @@ class ComplaintResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        orm_mode = True
 
 class ComplaintUpdate(BaseModel):
     status: Optional[str] = None

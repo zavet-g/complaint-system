@@ -1,8 +1,10 @@
 import httpx
 import os
-import openai
+from openai import OpenAI
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
+import gspread
+from google.oauth2.service_account import Credentials
 
 load_dotenv()
 
@@ -87,17 +89,19 @@ class AICategoryService:
     def __init__(self):
         self.api_key = os.getenv("OPENAI_API_KEY")
         if self.api_key:
-            openai.api_key = self.api_key
+            self.client = OpenAI(api_key=self.api_key)
+        else:
+            self.client = None
     
     async def categorize_complaint(self, text: str) -> str:
         """Определение категории жалобы с помощью OpenAI"""
-        if not self.api_key:
+        if not self.api_key or not self.client:
             return "другое"
         
         try:
             prompt = f'Определи категорию жалобы: "{text}". Варианты: техническая, оплата, другое. Ответ только одним словом.'
             
-            response = await openai.ChatCompletion.acreate(
+            response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "Ты помощник для категоризации жалоб клиентов."},
@@ -107,7 +111,7 @@ class AICategoryService:
                 temperature=0.1
             )
             
-            category = response.choices[0].message.content.strip().lower()
+            category = response.choices[0].message.content.strip().lower() if response.choices[0].message.content else "другое"
             
             # Валидация категории
             valid_categories = ["техническая", "оплата", "другое"]
@@ -188,3 +192,123 @@ class TelegramService:
         """.strip()
         
         return await self.send_notification(message) 
+
+class GoogleSheetsService:
+    def __init__(self):
+        self.credentials_file = os.getenv("GOOGLE_CREDENTIALS_FILE", "google-credentials.json")
+        self.spreadsheet_id = os.getenv("GOOGLE_SPREADSHEET_ID")
+        self.sheet_name = os.getenv("GOOGLE_SHEET_NAME", "Жалобы")
+        
+        # Настройка Google Sheets API
+        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+        
+        try:
+            if os.path.exists(self.credentials_file):
+                credentials = Credentials.from_service_account_file(
+                    self.credentials_file, scopes=scope
+                )
+                self.client = gspread.authorize(credentials)
+                self.spreadsheet = self.client.open_by_key(self.spreadsheet_id)
+                self.worksheet = self.spreadsheet.worksheet(self.sheet_name)
+            else:
+                print(f"Google credentials file not found: {self.credentials_file}")
+                self.client = None
+                self.spreadsheet = None
+                self.worksheet = None
+        except Exception as e:
+            print(f"Error initializing Google Sheets: {e}")
+            self.client = None
+            self.spreadsheet = None
+            self.worksheet = None
+    
+    async def create_headers_if_needed(self) -> bool:
+        """Создание заголовков в Google Sheets если их нет"""
+        if not self.worksheet:
+            return False
+        
+        try:
+            # Проверяем, есть ли уже заголовки
+            headers = self.worksheet.row_values(1)
+            if not headers or len(headers) < 8:
+                # Создаем заголовки
+                headers = [
+                    "ID", "Текст", "Категория", "Тональность", 
+                    "Статус", "IP адрес", "Дата создания", "Спам"
+                ]
+                self.worksheet.update('A1:H1', [headers])
+                print("Google Sheets headers created")
+            return True
+        except Exception as e:
+            print(f"Error creating headers: {e}")
+            return False
+    
+    async def add_complaint_to_sheet(self, complaint_data: Dict[str, Any]) -> bool:
+        """Добавление жалобы в Google Sheets"""
+        if not self.worksheet:
+            return False
+        
+        try:
+            # Создаем заголовки если нужно
+            await self.create_headers_if_needed()
+            
+            # Подготавливаем данные для записи
+            row_data = [
+                complaint_data.get('id', ''),
+                complaint_data.get('text', ''),
+                complaint_data.get('category', ''),
+                complaint_data.get('sentiment', ''),
+                complaint_data.get('status', ''),
+                complaint_data.get('ip_address', ''),
+                complaint_data.get('created_at', ''),
+                'Да' if complaint_data.get('is_spam', False) else 'Нет'
+            ]
+            
+            # Добавляем новую строку
+            self.worksheet.append_row(row_data)
+            return True
+        except Exception as e:
+            print(f"Error adding complaint to sheet: {e}")
+            return False
+    
+    async def get_complaints_summary(self) -> Optional[Dict[str, Any]]:
+        """Получение сводки жалоб из Google Sheets"""
+        if not self.worksheet:
+            return None
+        
+        try:
+            # Получаем все данные
+            all_values = self.worksheet.get_all_values()
+            
+            if len(all_values) <= 1:  # Только заголовки
+                return {
+                    "total_complaints": 0,
+                    "categories": {},
+                    "sentiments": {},
+                    "statuses": {}
+                }
+            
+            # Пропускаем заголовки
+            data_rows = all_values[1:]
+            
+            summary = {
+                "total_complaints": len(data_rows),
+                "categories": {},
+                "sentiments": {},
+                "statuses": {}
+            }
+            
+            # Анализируем данные
+            for row in data_rows:
+                if len(row) >= 5:
+                    category = row[2] if len(row) > 2 else "Неизвестно"
+                    sentiment = row[3] if len(row) > 3 else "Неизвестно"
+                    status = row[4] if len(row) > 4 else "Неизвестно"
+                    
+                    summary["categories"][category] = summary["categories"].get(category, 0) + 1
+                    summary["sentiments"][sentiment] = summary["sentiments"].get(sentiment, 0) + 1
+                    summary["statuses"][status] = summary["statuses"].get(status, 0) + 1
+            
+            return summary
+        except Exception as e:
+            print(f"Error getting summary: {e}")
+            return None 

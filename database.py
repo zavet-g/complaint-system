@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Mapped, mapped_column
 from datetime import datetime
 import os
 from dotenv import load_dotenv
@@ -17,12 +17,12 @@ Base = declarative_base()
 class Complaint(Base):
     __tablename__ = "complaints"
 
-    id = Column(Integer, primary_key=True, index=True)
-    text = Column(Text, nullable=False)
-    status = Column(String, default="open")
-    timestamp = Column(DateTime, default=datetime.utcnow)
-    sentiment = Column(String, default="unknown")
-    category = Column(String, default="другое")
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String, default="open")
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    sentiment: Mapped[str] = mapped_column(String, default="unknown")
+    category: Mapped[str] = mapped_column(String, default="другое")
 
 # Создание таблиц
 Base.metadata.create_all(bind=engine)

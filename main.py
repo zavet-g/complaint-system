@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import asyncio
+from typing import Optional
 
 from database import get_db, Complaint
 from models import ComplaintCreate, ComplaintResponse, ComplaintUpdate
@@ -50,7 +51,7 @@ async def create_complaint(
         category = await ai_category_service.categorize_complaint(complaint.text)
         
         # Получение IP клиента для геолокации (опционально)
-        client_ip = request.client.host
+        client_ip = request.client.host if request.client else "unknown"
         location = await geolocation_service.get_location(client_ip)
         
         # Создание записи в базе данных
@@ -98,8 +99,8 @@ async def create_complaint(
 
 @app.get("/complaints/", response_model=list[ComplaintResponse])
 async def get_complaints(
-    status: str = None,
-    category: str = None,
+    status: Optional[str] = None,
+    category: Optional[str] = None,
     limit: int = 100,
     db: Session = Depends(get_db)
 ):
@@ -264,8 +265,8 @@ async def send_daily_report(db: Session = Depends(get_db)):
         else:
             return {"status": "error", "message": "Failed to send daily report"}
             
-            except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Report error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Report error: {str(e)}")
 
 @app.post("/sheets/setup/")
 async def setup_google_sheets():
