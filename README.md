@@ -111,6 +111,27 @@ curl -X PUT "http://localhost:8000/complaints/1/" \
 curl "http://localhost:8000/health/"
 ```
 
+### Telegram уведомления
+```bash
+# Тестовое уведомление
+curl -X POST "http://localhost:8000/telegram/test/"
+
+# Ежедневный отчет
+curl -X POST "http://localhost:8000/telegram/daily-report/"
+```
+
+### Google Sheets интеграция
+```bash
+# Настройка заголовков
+curl -X POST "http://localhost:8000/sheets/setup/"
+
+# Получение сводки
+curl "http://localhost:8000/sheets/summary/"
+
+# Экспорт всех жалоб
+curl -X POST "http://localhost:8000/sheets/export/"
+```
+
 ## Документация API
 
 После запуска приложения документация доступна по адресам:
@@ -163,6 +184,8 @@ complaint-system/
 ├── n8n_setup.md            # Инструкция по настройке n8n
 ├── QUICK_START.md          # Быстрый старт (5 минут)
 ├── DEPLOYMENT.md           # Подробная инструкция по развертыванию
+├── TELEGRAM_SETUP.md       # Настройка Telegram бота
+├── GOOGLE_SHEETS_SETUP.md  # Настройка Google Sheets
 ├── .gitignore              # Исключения для Git
 ├── README.md               # Основная документация
 └── complaints.db           # SQLite база данных (создается автоматически)

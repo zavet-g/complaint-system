@@ -7,7 +7,7 @@ import asyncio
 
 from database import get_db, Complaint
 from models import ComplaintCreate, ComplaintResponse, ComplaintUpdate
-from services import SentimentService, AICategoryService, SpamService, GeolocationService
+from services import SentimentService, AICategoryService, SpamService, GeolocationService, TelegramService, GoogleSheetsService
 
 app = FastAPI(
     title="Complaint Processing System",
@@ -29,6 +29,8 @@ sentiment_service = SentimentService()
 ai_category_service = AICategoryService()
 spam_service = SpamService()
 geolocation_service = GeolocationService()
+telegram_service = TelegramService()
+sheets_service = GoogleSheetsService()
 
 @app.post("/complaints/", response_model=ComplaintResponse)
 async def create_complaint(
@@ -61,6 +63,27 @@ async def create_complaint(
         db.add(db_complaint)
         db.commit()
         db.refresh(db_complaint)
+        
+        # Отправка уведомления в Telegram (асинхронно)
+        try:
+            complaint_data = {
+                "id": db_complaint.id,
+                "text": db_complaint.text,
+                "category": db_complaint.category,
+                "sentiment": db_complaint.sentiment,
+                "status": db_complaint.status,
+                "ip_address": client_ip,
+                "created_at": db_complaint.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                "is_spam": spam_result.get("is_spam", False)
+            }
+            
+            # Отправляем уведомление в фоне (не блокируем ответ)
+            asyncio.create_task(telegram_service.send_complaint_notification(complaint_data))
+            
+            # Добавляем в Google Sheets (асинхронно)
+            asyncio.create_task(sheets_service.add_complaint_to_sheet(complaint_data))
+        except Exception as e:
+            print(f"Error sending notifications: {e}")
         
         return ComplaintResponse(
             id=db_complaint.id,
@@ -195,6 +218,120 @@ async def get_complaint(
 async def health_check():
     """Проверка здоровья API"""
     return {"status": "healthy", "timestamp": datetime.utcnow()}
+
+@app.post("/telegram/test/")
+async def test_telegram():
+    """Тестирование Telegram уведомлений"""
+    try:
+        success = await telegram_service.send_notification(
+            "🧪 <b>Тестовое уведомление</b>\n\n✅ Telegram интеграция работает!"
+        )
+        
+        if success:
+            return {"status": "success", "message": "Telegram notification sent"}
+        else:
+            return {"status": "error", "message": "Failed to send Telegram notification"}
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Telegram error: {str(e)}")
+
+@app.post("/telegram/daily-report/")
+async def send_daily_report(db: Session = Depends(get_db)):
+    """Отправка ежедневного отчета в Telegram"""
+    try:
+        # Подсчет жалоб за последние 24 часа
+        yesterday = datetime.utcnow() - timedelta(days=1)
+        total_complaints = db.query(Complaint).filter(
+            Complaint.timestamp >= yesterday
+        ).count()
+        
+        open_complaints = db.query(Complaint).filter(
+            Complaint.status == "open",
+            Complaint.timestamp >= yesterday
+        ).count()
+        
+        success = await telegram_service.send_daily_report(total_complaints, open_complaints)
+        
+        if success:
+            return {
+                "status": "success", 
+                "message": "Daily report sent",
+                "data": {
+                    "total_complaints": total_complaints,
+                    "open_complaints": open_complaints
+                }
+            }
+        else:
+            return {"status": "error", "message": "Failed to send daily report"}
+            
+            except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Report error: {str(e)}")
+
+@app.post("/sheets/setup/")
+async def setup_google_sheets():
+    """Настройка Google Sheets (создание заголовков)"""
+    try:
+        success = await sheets_service.create_headers_if_needed()
+        
+        if success:
+            return {"status": "success", "message": "Google Sheets headers created"}
+        else:
+            return {"status": "error", "message": "Failed to setup Google Sheets"}
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Sheets setup error: {str(e)}")
+
+@app.get("/sheets/summary/")
+async def get_sheets_summary():
+    """Получение сводки из Google Sheets"""
+    try:
+        summary = await sheets_service.get_complaints_summary()
+        
+        if summary:
+            return {
+                "status": "success",
+                "data": summary
+            }
+        else:
+            return {"status": "error", "message": "Failed to get summary from Google Sheets"}
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Sheets summary error: {str(e)}")
+
+@app.post("/sheets/export/")
+async def export_complaints_to_sheets(db: Session = Depends(get_db)):
+    """Экспорт всех жалоб в Google Sheets"""
+    try:
+        # Получаем все жалобы
+        complaints = db.query(Complaint).all()
+        
+        exported_count = 0
+        for complaint in complaints:
+            complaint_data = {
+                "id": complaint.id,
+                "text": complaint.text,
+                "category": complaint.category,
+                "sentiment": complaint.sentiment,
+                "status": complaint.status,
+                "created_at": complaint.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                "ip_address": "N/A",
+                "is_spam": False
+            }
+            
+            if await sheets_service.add_complaint_to_sheet(complaint_data):
+                exported_count += 1
+        
+        return {
+            "status": "success",
+            "message": f"Exported {exported_count} complaints to Google Sheets",
+            "data": {
+                "total_complaints": len(complaints),
+                "exported_count": exported_count
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Export error: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
