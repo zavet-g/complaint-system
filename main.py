@@ -2,7 +2,7 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import asyncio
 from typing import Optional
 
@@ -135,7 +135,7 @@ async def get_recent_complaints(
 ):
     """Получение жалоб за последние N часов (для n8n)"""
     try:
-        time_threshold = datetime.utcnow() - timedelta(hours=hours)
+        time_threshold = datetime.now(timezone.utc) - timedelta(hours=hours)
         
         complaints = db.query(Complaint).filter(
             Complaint.status == status,
@@ -218,7 +218,7 @@ async def get_complaint(
 @app.get("/health/")
 async def health_check():
     """Проверка здоровья API"""
-    return {"status": "healthy", "timestamp": datetime.utcnow()}
+    return {"status": "healthy", "timestamp": datetime.now(timezone.utc)}
 
 @app.post("/telegram/test/")
 async def test_telegram():
@@ -241,7 +241,7 @@ async def send_daily_report(db: Session = Depends(get_db)):
     """Отправка ежедневного отчета в Telegram"""
     try:
         # Подсчет жалоб за последние 24 часа
-        yesterday = datetime.utcnow() - timedelta(days=1)
+        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
         total_complaints = db.query(Complaint).filter(
             Complaint.timestamp >= yesterday
         ).count()

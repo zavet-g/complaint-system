@@ -94,9 +94,11 @@ class AICategoryService:
             self.client = None
     
     async def categorize_complaint(self, text: str) -> str:
-        """Определение категории жалобы с помощью OpenAI"""
+        """Определение категории жалобы с помощью OpenAI или простых правил"""
+        print(f"DEBUG: API key exists: {bool(self.api_key)}, Client exists: {bool(self.client)}")
         if not self.api_key or not self.client:
-            return "другое"
+            print(f"DEBUG: Using simple categorization for: {text}")
+            return self._simple_categorization(text)
         
         try:
             prompt = f'Определи категорию жалобы: "{text}". Варианты: техническая, оплата, другое. Ответ только одним словом.'
@@ -122,12 +124,37 @@ class AICategoryService:
                 
         except Exception as e:
             print(f"Error categorizing complaint: {e}")
-            return "другое"
+            # Fallback на простую категоризацию
+            return self._simple_categorization(text)
+    
+    def _simple_categorization(self, text: str) -> str:
+        """Простая категоризация на основе ключевых слов"""
+        text_lower = text.lower()
+        
+        # Технические проблемы
+        tech_keywords = ['сайт', 'приложение', 'ошибка', 'не работает', 'зависает', 'вылетает', 
+                        'не загружается', 'медленно', 'баг', 'глюк', 'техническая', 'программа']
+        if any(keyword in text_lower for keyword in tech_keywords):
+            return "техническая"
+        
+        # Проблемы с оплатой
+        payment_keywords = ['деньги', 'оплата', 'платеж', 'счет', 'списали', 'дважды', 
+                           'возврат', 'штраф', 'комиссия', 'цена', 'стоимость']
+        if any(keyword in text_lower for keyword in payment_keywords):
+            return "оплата"
+        
+        # По умолчанию
+        return "другое"
 
 class TelegramService:
     def __init__(self):
         self.bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-        self.chat_id = os.getenv("TELEGRAM_CHAT_ID")
+        chat_id_str = os.getenv("TELEGRAM_CHAT_ID")
+        # Преобразуем chat_id в число
+        try:
+            self.chat_id = int(chat_id_str) if chat_id_str else None
+        except (ValueError, TypeError):
+            self.chat_id = None
         self.base_url = f"https://api.telegram.org/bot{self.bot_token}"
     
     async def send_notification(self, message: str, parse_mode: str = "HTML") -> bool:
