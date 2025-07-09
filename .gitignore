@@ -153,4 +153,9 @@ logs/
 
 # Temporary files
 tmp/
-temp/ *-credentials.json
+temp/
+
+# Google Cloud credentials
+*-credentials.json
+complaint-system-*.json
+google-credentials.json
