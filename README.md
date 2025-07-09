@@ -15,102 +15,67 @@
 - ✅ Telegram уведомления
 - ✅ Google Sheets интеграция
 
-## Установка
+## 🚀 Быстрый старт
 
-### 1. Клонирование репозитория
+Для быстрого запуска проекта следуйте инструкции в [QUICK_START.md](QUICK_START.md) (5 минут).
 
+## 📋 Подробная установка
+
+Для полной настройки с интеграцией n8n и всеми функциями следуйте подробной инструкции в [DEPLOYMENT.md](DEPLOYMENT.md).
+
+### Краткий обзор установки:
+
+#### 1. Клонирование репозитория
 ```bash
 git clone https://github.com/zavet-g/complaint-system
 cd complaint-system
 ```
 
-### 2. Создание виртуального окружения
-
+#### 2. Быстрый запуск (рекомендуется)
 ```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# или
-venv\Scripts\activate  # Windows
+chmod +x run.sh
+./run.sh
 ```
 
-### 3. Установка зависимостей
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Настройка переменных окружения
-
-Скопируйте файл `env.example` в `.env` и заполните необходимые переменные:
-
-```bash
-cp env.example .env
-```
-
-Отредактируйте `.env` файл:
+#### 3. Настройка API ключей
+Скрипт создаст файл `.env`. Отредактируйте его и добавьте ваши API ключи:
 
 ```env
-# API Keys
 SENTIMENT_API_KEY=your_sentiment_api_key_here
 OPENAI_API_KEY=your_openai_api_key_here
 SPAM_API_KEY=your_spam_api_key_here
-
-# Database
-DATABASE_URL=sqlite:///./complaints.db
-
-# Server
-HOST=0.0.0.0
-PORT=8000
-
-# Telegram Bot (for n8n integration)
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-TELEGRAM_CHAT_ID=your_chat_id_here
-
-# Google Sheets (for n8n integration)
-GOOGLE_SHEETS_CREDENTIALS_FILE=path_to_service_account.json
-GOOGLE_SHEETS_SPREADSHEET_ID=your_spreadsheet_id_here
 ```
 
-### 5. Получение API ключей
+#### 4. Получение API ключей
 
-#### Sentiment Analysis API (APILayer)
-1. Зарегистрируйтесь на [APILayer](https://apilayer.com/)
-2. Подпишитесь на [Sentiment Analysis API](https://apilayer.com/marketplace/sentiment-analysis-api)
-3. Получите API ключ (100 бесплатных запросов/месяц)
+**Sentiment Analysis API (APILayer)**
+- Зарегистрируйтесь на [APILayer](https://apilayer.com/)
+- Подпишитесь на [Sentiment Analysis API](https://apilayer.com/marketplace/sentiment-analysis-api)
+- Получите API ключ (100 бесплатных запросов/месяц)
 
-#### OpenAI API
-1. Зарегистрируйтесь на [OpenAI](https://openai.com/)
-2. Получите API ключ в разделе API Keys
+**OpenAI API**
+- Зарегистрируйтесь на [OpenAI](https://openai.com/)
+- Получите API ключ в разделе [API Keys](https://platform.openai.com/api-keys)
 
-#### Spam Check API (API Ninjas)
-1. Зарегистрируйтесь на [API Ninjas](https://api-ninjas.com/)
-2. Получите API ключ (50 запросов/день)
+**Spam Check API (API Ninjas)**
+- Зарегистрируйтесь на [API Ninjas](https://api-ninjas.com/)
+- Получите API ключ (50 запросов/день)
 
-### 6. Запуск приложения
+#### 5. Запуск приложения
 
-#### Быстрый запуск (рекомендуется)
+**Быстрый запуск (рекомендуется)**
 ```bash
 ./run.sh
 ```
 
-#### Ручной запуск
+**Ручной запуск**
 ```bash
 python main.py
 ```
 
-Или с помощью uvicorn:
-
+**Запуск через Docker**
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-#### Запуск через Docker
-```bash
-# Сборка и запуск
 docker-compose up --build
-
-# Запуск в фоновом режиме
-docker-compose up -d
 ```
 
 Приложение будет доступно по адресу: http://localhost:8000
@@ -180,7 +145,7 @@ curl "http://localhost:8000/health/"
 5. **Google Sheets** - добавление записей для жалоб об оплате
 6. **HTTP Request** - обновление статуса на closed
 
-## Структура проекта
+## 📁 Структура проекта
 
 ```
 complaint-system/
@@ -196,8 +161,10 @@ complaint-system/
 ├── Dockerfile              # Docker образ для приложения
 ├── n8n_workflow.json       # Workflow для n8n
 ├── n8n_setup.md            # Инструкция по настройке n8n
+├── QUICK_START.md          # Быстрый старт (5 минут)
+├── DEPLOYMENT.md           # Подробная инструкция по развертыванию
 ├── .gitignore              # Исключения для Git
-├── README.md               # Документация
+├── README.md               # Основная документация
 └── complaints.db           # SQLite база данных (создается автоматически)
 ```
 

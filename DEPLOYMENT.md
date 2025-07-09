@@ -1,498 +1,286 @@
-# Инструкция по развертыванию системы обработки жалоб
+# 📋 Подробная инструкция по запуску проекта "Система обработки жалоб клиентов"
 
-## Варианты развертывания
+## 🎯 Обзор проекта
 
-### 1. Локальное развертывание (для разработки)
+Это полнофункциональная система для обработки жалоб клиентов с интеграцией внешних API и автоматизацией через n8n. Система включает:
+- RESTful API на FastAPI
+- Анализ тональности через APILayer
+- Автоматическая категоризация с помощью OpenAI GPT-3.5
+- Проверка на спам через API Ninjas
+- Геолокация по IP
+- SQLite база данных
+- Интеграция с n8n для автоматизации
+- Telegram уведомления
+- Google Sheets интеграция
 
-#### Требования
-- Python 3.8+
-- pip
-- Git
+## 🚀 Способ 1: Быстрый запуск (рекомендуется)
 
-#### Шаги развертывания
-
-1. **Клонирование репозитория**
+### Шаг 1: Подготовка системы
 ```bash
-git clone https://github.com/zavet-g/complaint-system
-cd complaint-system
+# Убедитесь, что у вас установлен Python 3.8+
+python3 --version
+
+# Убедитесь, что у вас установлен pip
+pip3 --version
 ```
 
-2. **Быстрый запуск**
+### Шаг 2: Клонирование и настройка
 ```bash
+# Клонируйте репозиторий (если еще не сделано)
+git clone https://github.com/zavet-g/complaint-system
+cd complaint-system
+
+# Сделайте скрипт запуска исполняемым
+chmod +x run.sh
+```
+
+### Шаг 3: Первый запуск
+```bash
+# Запустите скрипт - он создаст виртуальное окружение и покажет что нужно настроить
 ./run.sh
 ```
 
-3. **Проверка работы**
+### Шаг 4: Настройка API ключей
+Скрипт создаст файл `.env` из примера. Отредактируйте его:
+
 ```bash
-# Тестирование API
-python test_api.py
-
-# Проверка документации
-open http://localhost:8000/docs
-```
-
-### 2. Docker развертывание (для продакшена)
-
-#### Требования
-- Docker
-- Docker Compose
-
-#### Шаги развертывания
-
-1. **Подготовка файлов**
-```bash
-# Клонирование репозитория
-git clone <repository-url>
-cd complaint-system
-
-# Создание .env файла
-cp env.example .env
-# Отредактируйте .env файл с вашими API ключами
-```
-
-2. **Запуск через Docker Compose**
-```bash
-# Сборка и запуск
-docker-compose up --build -d
-
-# Проверка статуса
-docker-compose ps
-
-# Просмотр логов
-docker-compose logs -f complaint-api
-```
-
-3. **Настройка n8n**
-```bash
-# Откройте n8n в браузере
-open http://localhost:5678
-
-# Логин: admin / admin123
-# Импортируйте workflow из n8n_workflow.json
-```
-
-### 3. Облачное развертывание
-
-#### Heroku
-
-1. **Создание приложения**
-```bash
-# Установка Heroku CLI
-heroku create complaint-system-api
-
-# Добавление переменных окружения
-heroku config:set SENTIMENT_API_KEY=your_key
-heroku config:set OPENAI_API_KEY=your_key
-heroku config:set SPAM_API_KEY=your_key
-
-# Деплой
-git push heroku main
-```
-
-2. **Настройка базы данных**
-```bash
-# Добавление PostgreSQL
-heroku addons:create heroku-postgresql:hobby-dev
-
-# Обновление DATABASE_URL
-heroku config:set DATABASE_URL=$(heroku config:get DATABASE_URL)
-```
-
-#### AWS (EC2)
-
-1. **Создание EC2 инстанса**
-```bash
-# Подключение к инстансу
-ssh -i your-key.pem ubuntu@your-instance-ip
-
-# Установка Docker
-sudo apt update
-sudo apt install docker.io docker-compose -y
-sudo usermod -aG docker ubuntu
-```
-
-2. **Развертывание приложения**
-```bash
-# Клонирование репозитория
-git clone <repository-url>
-cd complaint-system
-
-# Настройка .env
-cp env.example .env
 nano .env
+# или
+code .env
+```
 
-# Запуск
+Замените значения на ваши API ключи:
+
+```env
+# API Keys
+SENTIMENT_API_KEY=ваш_ключ_apilayer_здесь
+OPENAI_API_KEY=ваш_ключ_openai_здесь
+SPAM_API_KEY=ваш_ключ_api_ninjas_здесь
+
+# Database
+DATABASE_URL=sqlite:///./complaints.db
+
+# Server
+HOST=0.0.0.0
+PORT=8000
+
+# Telegram Bot (для интеграции с n8n)
+TELEGRAM_BOT_TOKEN=ваш_токен_бота_здесь
+TELEGRAM_CHAT_ID=ваш_chat_id_здесь
+
+# Google Sheets (для интеграции с n8n)
+GOOGLE_SHEETS_CREDENTIALS_FILE=path_to_service_account.json
+GOOGLE_SHEETS_SPREADSHEET_ID=ваш_id_таблицы_здесь
+```
+
+### Шаг 5: Повторный запуск
+```bash
+# Теперь запустите скрипт снова
+./run.sh
+```
+
+## 🔑 Получение API ключей
+
+### 1. Sentiment Analysis API (APILayer)
+1. Зарегистрируйтесь на [APILayer](https://apilayer.com/)
+2. Подпишитесь на [Sentiment Analysis API](https://apilayer.com/marketplace/sentiment-analysis-api)
+3. Получите API ключ (100 бесплатных запросов/месяц)
+4. Скопируйте ключ в `SENTIMENT_API_KEY`
+
+### 2. OpenAI API
+1. Зарегистрируйтесь на [OpenAI](https://openai.com/)
+2. Перейдите в раздел [API Keys](https://platform.openai.com/api-keys)
+3. Создайте новый API ключ
+4. Скопируйте ключ в `OPENAI_API_KEY`
+
+### 3. Spam Check API (API Ninjas)
+1. Зарегистрируйтесь на [API Ninjas](https://api-ninjas.com/)
+2. Получите API ключ (50 запросов/день)
+3. Скопируйте ключ в `SPAM_API_KEY`
+
+## 🐳 Способ 2: Запуск через Docker
+
+### Шаг 1: Установка Docker
+```bash
+# Убедитесь, что Docker установлен
+docker --version
+docker-compose --version
+```
+
+### Шаг 2: Настройка переменных окружения
+```bash
+# Скопируйте файл с переменными окружения
+cp env.example .env
+
+# Отредактируйте .env файл (как описано выше)
+nano .env
+```
+
+### Шаг 3: Запуск через Docker Compose
+```bash
+# Сборка и запуск всех сервисов
+docker-compose up --build
+
+# Или запуск в фоновом режиме
 docker-compose up -d
 ```
 
-3. **Настройка домена и SSL**
+### Шаг 4: Проверка работы
 ```bash
-# Установка Nginx
-sudo apt install nginx -y
+# Проверьте статус контейнеров
+docker-compose ps
 
-# Настройка reverse proxy
-sudo nano /etc/nginx/sites-available/complaint-system
+# Посмотрите логи
+docker-compose logs complaint-api
+docker-compose logs n8n
 ```
 
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
+## 🔧 Способ 3: Ручная установка
 
-    location / {
-        proxy_pass http://localhost:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
+### Шаг 1: Создание виртуального окружения
+```bash
+# Создайте виртуальное окружение
+python3 -m venv venv
+
+# Активируйте его
+source venv/bin/activate  # Linux/Mac
+# или
+venv\Scripts\activate     # Windows
 ```
 
+### Шаг 2: Установка зависимостей
 ```bash
-# Активация конфигурации
-sudo ln -s /etc/nginx/sites-available/complaint-system /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl restart nginx
-
-# SSL с Let's Encrypt
-sudo apt install certbot python3-certbot-nginx -y
-sudo certbot --nginx -d your-domain.com
+# Установите зависимости
+pip install -r requirements.txt
 ```
 
-## Настройка мониторинга
-
-### 1. Логирование
-
-#### Локальное логирование
+### Шаг 3: Настройка переменных окружения
 ```bash
-# Просмотр логов приложения
-tail -f logs/app.log
+# Скопируйте файл с переменными окружения
+cp env.example .env
 
-# Просмотр логов Docker
-docker-compose logs -f complaint-api
+# Отредактируйте .env файл
+nano .env
 ```
 
-#### Облачное логирование
+### Шаг 4: Запуск приложения
 ```bash
-# Heroku
-heroku logs --tail
+# Запуск через Python
+python main.py
 
-# AWS CloudWatch
-aws logs create-log-group --log-group-name complaint-system
-aws logs create-log-stream --log-group-name complaint-system --log-stream-name app
+# Или через uvicorn
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 2. Мониторинг здоровья
+## 🌐 Проверка работы
 
-#### Health Check
+### Основные URL:
+- **API**: http://localhost:8000
+- **Документация Swagger**: http://localhost:8000/docs
+- **Документация ReDoc**: http://localhost:8000/redoc
+- **Проверка здоровья**: http://localhost:8000/health/
+
+### Тестирование API:
 ```bash
-# Проверка состояния API
+# Проверка здоровья API
 curl http://localhost:8000/health/
 
-# Автоматическая проверка
-while true; do
-    curl -f http://localhost:8000/health/ || echo "API недоступен"
-    sleep 30
-done
+# Создание тестовой жалобы
+curl -X POST "http://localhost:8000/complaints/" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Не приходит SMS-код для подтверждения"}'
+
+# Получение списка жалоб
+curl http://localhost:8000/complaints/
 ```
 
-#### Prometheus + Grafana
-```yaml
-# docker-compose.monitoring.yml
-version: '3.8'
-services:
-  prometheus:
-    image: prom/prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+## 🤖 Настройка n8n (опционально)
 
-  grafana:
-    image: grafana/grafana
-    ports:
-      - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-```
+### Шаг 1: Настройка Telegram бота
+1. Создайте бота через [@BotFather](https://t.me/botfather)
+2. Получите токен бота
+3. Добавьте токен в переменную `TELEGRAM_BOT_TOKEN`
+4. Получите chat_id и добавьте в `TELEGRAM_CHAT_ID`
 
-### 3. Алерты
+### Шаг 2: Настройка Google Sheets
+1. Создайте проект в [Google Cloud Console](https://console.cloud.google.com/)
+2. Включите Google Sheets API
+3. Создайте сервисный аккаунт и скачайте JSON файл
+4. Добавьте путь к файлу в `GOOGLE_SHEETS_CREDENTIALS_FILE`
+5. Создайте Google Sheets и добавьте ID в `GOOGLE_SHEETS_SPREADSHEET_ID`
 
-#### Telegram уведомления
-```python
-# Добавьте в services.py
-async def send_alert(message: str):
-    """Отправка алерта в Telegram"""
-    if not os.getenv("TELEGRAM_BOT_TOKEN"):
-        return
-    
-    try:
-        async with httpx.AsyncClient() as client:
-            await client.post(
-                f"https://api.telegram.org/bot{os.getenv('TELEGRAM_BOT_TOKEN')}/sendMessage",
-                json={
-                    "chat_id": os.getenv("TELEGRAM_CHAT_ID"),
-                    "text": f"🚨 Алерт: {message}"
-                }
-            )
-    except Exception as e:
-        print(f"Error sending alert: {e}")
-```
+### Шаг 3: Доступ к n8n
+- **URL**: http://localhost:5678
+- **Логин**: admin
+- **Пароль**: admin123
 
-## Резервное копирование
+## 🛠️ Устранение неполадок
 
-### 1. База данных
-
-#### SQLite (локальная)
+### Проблема: Python не найден
 ```bash
-# Создание резервной копии
-cp complaints.db complaints_backup_$(date +%Y%m%d_%H%M%S).db
+# Установите Python 3.8+
+# Ubuntu/Debian:
+sudo apt update
+sudo apt install python3 python3-pip python3-venv
 
-# Автоматическое резервное копирование
-crontab -e
-# Добавьте строку:
-0 2 * * * cp /path/to/complaints.db /backup/complaints_$(date +\%Y\%m\%d).db
+# macOS:
+brew install python3
+
+# Windows:
+# Скачайте с python.org
 ```
 
-#### PostgreSQL (облачная)
+### Проблема: Порты заняты
 ```bash
-# Heroku
-heroku pg:backups:capture
-heroku pg:backups:download
+# Проверьте какие процессы используют порты
+lsof -i :8000
+lsof -i :5678
 
-# AWS RDS
-aws rds create-db-snapshot \
-    --db-instance-identifier complaint-system \
-    --db-snapshot-identifier complaint-system-$(date +%Y%m%d)
+# Остановите процессы или измените порты в .env
 ```
 
-### 2. Конфигурация
-
+### Проблема: API ключи не работают
 ```bash
-# Резервное копирование конфигурации
-tar -czf config_backup_$(date +%Y%m%d).tar.gz .env docker-compose.yml n8n_workflow.json
+# Проверьте правильность ключей
+# Убедитесь что у вас есть кредиты на API
+# Проверьте логи приложения
 ```
 
-## Масштабирование
-
-### 1. Горизонтальное масштабирование
-
-#### Docker Swarm
+### Проблема: База данных не создается
 ```bash
-# Инициализация Swarm
-docker swarm init
-
-# Развертывание стека
-docker stack deploy -c docker-compose.yml complaint-system
-
-# Масштабирование
-docker service scale complaint-system_complaint-api=3
+# Убедитесь что у вас есть права на запись в директорию
+# Проверьте что SQLite установлен
 ```
 
-#### Kubernetes
-```yaml
-# deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: complaint-api
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: complaint-api
-  template:
-    metadata:
-      labels:
-        app: complaint-api
-    spec:
-      containers:
-      - name: complaint-api
-        image: complaint-system:latest
-        ports:
-        - containerPort: 8000
+## 📁 Структура проекта
+
+```
+complaint-system/
+├── main.py                 # Основной файл FastAPI приложения
+├── database.py             # Модели базы данных
+├── models.py               # Pydantic модели
+├── services.py             # Сервисы для внешних API
+├── requirements.txt        # Зависимости Python
+├── env.example             # Пример переменных окружения
+├── run.sh                  # Скрипт быстрого запуска
+├── test_api.py             # Тестовый скрипт для API
+├── docker-compose.yml      # Docker Compose конфигурация
+├── Dockerfile              # Docker образ для приложения
+├── n8n_workflow.json       # Workflow для n8n
+├── n8n_setup.md            # Инструкция по настройке n8n
+├── .gitignore              # Исключения для Git
+├── README.md               # Документация
+└── DEPLOYMENT.md           # Эта инструкция
 ```
 
-### 2. Вертикальное масштабирование
+## 🎉 Готово!
 
-#### Обновление ресурсов
-```yaml
-# docker-compose.yml
-services:
-  complaint-api:
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 2G
-        reservations:
-          cpus: '1.0'
-          memory: 1G
-```
+После выполнения всех шагов ваша система обработки жалоб будет готова к работе. Вы можете:
 
-## Безопасность
+1. **Отправлять жалобы** через API
+2. **Просматривать** обработанные жалобы
+3. **Настраивать автоматизацию** через n8n
+4. **Получать уведомления** в Telegram
+5. **Экспортировать данные** в Google Sheets
 
-### 1. Переменные окружения
-
-```bash
-# Никогда не коммитьте .env файл
-echo ".env" >> .gitignore
-
-# Используйте секреты в продакшене
-# Heroku
-heroku config:set SECRET_KEY=$(openssl rand -hex 32)
-
-# Docker
-docker run -e SECRET_KEY=your_secret_key complaint-api
-```
-
-### 2. Аутентификация
-
-```python
-# Добавьте в main.py
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
-security = HTTPBearer()
-
-async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    if credentials.credentials != os.getenv("API_TOKEN"):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token"
-        )
-    return credentials.credentials
-
-@app.post("/complaints/")
-async def create_complaint(
-    complaint: ComplaintCreate,
-    token: str = Depends(verify_token)
-):
-    # ... остальной код
-```
-
-### 3. Rate Limiting
-
-```python
-# Добавьте в main.py
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-
-limiter = Limiter(key_func=get_remote_address)
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-@app.post("/complaints/")
-@limiter.limit("10/minute")
-async def create_complaint(
-    complaint: ComplaintCreate,
-    request: Request
-):
-    # ... остальной код
-```
-
-## Обновление системы
-
-### 1. Обновление кода
-
-```bash
-# Получение обновлений
-git pull origin main
-
-# Пересборка Docker образов
-docker-compose build --no-cache
-
-# Перезапуск сервисов
-docker-compose up -d
-```
-
-### 2. Миграции базы данных
-
-```python
-# Создайте файл migrations.py
-from alembic import command, config
-from alembic.config import Config
-
-def run_migrations():
-    alembic_cfg = Config("alembic.ini")
-    command.upgrade(alembic_cfg, "head")
-
-# Добавьте в main.py
-@app.on_event("startup")
-async def startup_event():
-    run_migrations()
-```
-
-### 3. Откат изменений
-
-```bash
-# Откат к предыдущей версии
-git checkout HEAD~1
-
-# Пересборка и перезапуск
-docker-compose build --no-cache
-docker-compose up -d
-```
-
-## Устранение неполадок
-
-### 1. Частые проблемы
-
-#### API недоступен
-```bash
-# Проверка статуса сервисов
-docker-compose ps
-
-# Просмотр логов
-docker-compose logs complaint-api
-
-# Проверка портов
-netstat -tulpn | grep 8000
-```
-
-#### Проблемы с базой данных
-```bash
-# Проверка подключения к БД
-docker exec -it complaint-api python -c "
-from database import engine
-print(engine.execute('SELECT 1').fetchone())
-"
-
-# Резервное копирование и восстановление
-docker exec -it complaint-api sqlite3 complaints.db .dump > backup.sql
-```
-
-#### Проблемы с внешними API
-```bash
-# Тестирование API ключей
-curl -H "apikey: $SENTIMENT_API_KEY" \
-  https://api.apilayer.com/sentiment/analysis \
-  -d '{"text": "test"}'
-```
-
-### 2. Логи и диагностика
-
-```bash
-# Включение debug режима
-export DEBUG=True
-docker-compose up
-
-# Подробные логи
-docker-compose logs -f --tail=100 complaint-api
-```
-
-### 3. Мониторинг производительности
-
-```python
-# Добавьте в main.py
-import time
-from fastapi import Request
-
-@app.middleware("http")
-async def add_process_time_header(request: Request, call_next):
-    start_time = time.time()
-    response = await call_next(request)
-    process_time = time.time() - start_time
-    response.headers["X-Process-Time"] = str(process_time)
-    return response
-``` 
+Для получения дополнительной помощи обратитесь к документации API по адресу http://localhost:8000/docs 
