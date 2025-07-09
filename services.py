@@ -195,21 +195,28 @@ class TelegramService:
 
 class GoogleSheetsService:
     def __init__(self):
-        self.credentials_file = os.getenv("GOOGLE_CREDENTIALS_FILE", "google-credentials.json")
-        self.spreadsheet_id = os.getenv("GOOGLE_SPREADSHEET_ID")
+        self.credentials_file = os.getenv("GOOGLE_SHEETS_CREDENTIALS_FILE", "google-credentials.json")
+        self.spreadsheet_id = os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID")
         self.sheet_name = os.getenv("GOOGLE_SHEET_NAME", "Жалобы")
         
         # Настройка Google Sheets API
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
         
         try:
+            print(f"DEBUG: Checking file {self.credentials_file}, exists: {os.path.exists(self.credentials_file)}")
             if os.path.exists(self.credentials_file):
+                print(f"DEBUG: Loading credentials from {self.credentials_file}")
                 credentials = Credentials.from_service_account_file(
                     self.credentials_file, scopes=scope
                 )
+                print(f"DEBUG: Authorizing with gspread")
                 self.client = gspread.authorize(credentials)
+                print(f"DEBUG: Opening spreadsheet {self.spreadsheet_id}")
                 self.spreadsheet = self.client.open_by_key(self.spreadsheet_id)
+                print(f"DEBUG: Available worksheets: {[ws.title for ws in self.spreadsheet.worksheets()]}")
+                print(f"DEBUG: Getting worksheet '{self.sheet_name}'")
                 self.worksheet = self.spreadsheet.worksheet(self.sheet_name)
+                print(f"DEBUG: Successfully initialized Google Sheets")
             else:
                 print(f"Google credentials file not found: {self.credentials_file}")
                 self.client = None
