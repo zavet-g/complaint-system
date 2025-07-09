@@ -13,7 +13,7 @@
 
 1. **Клонирование репозитория**
 ```bash
-git clone <repository-url>
+git clone https://github.com/zavet-g/complaint-system
 cd complaint-system
 ```
 
