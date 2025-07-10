@@ -5,6 +5,8 @@ from typing import Optional, Dict, Any
 from dotenv import load_dotenv
 import gspread
 from google.oauth2.service_account import Credentials
+import asyncio
+import functools
 
 load_dotenv()
 
@@ -121,6 +123,9 @@ class GeolocationService:
     
     async def get_location(self, ip: str) -> Dict[str, Any]:
         """Получение геолокации по IP через IP API"""
+        if not ip or ip == "unknown":
+            return {}
+            
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
@@ -131,9 +136,10 @@ class GeolocationService:
                 if response.status_code == 200:
                     return response.json()
                 else:
+                    print(f"IP API error: {response.status_code} for IP {ip}")
                     return {}
         except Exception as e:
-            print(f"Error getting location: {e}")
+            print(f"Error getting location for IP {ip}: {e}")
             return {}
 
 class AICategoryService:
@@ -174,7 +180,11 @@ class AICategoryService:
                 return "другое"
                 
         except Exception as e:
-            print(f"Error categorizing complaint: {e}")
+            error_msg = str(e)
+            if "insufficient_quota" in error_msg or "429" in error_msg:
+                print(f"OpenAI API quota exceeded, using fallback categorization for: {text[:50]}...")
+            else:
+                print(f"Error categorizing complaint: {e}")
             # Fallback на простую категоризацию
             return self._simple_categorization(text)
     
@@ -239,10 +249,12 @@ class TelegramService:
     async def send_complaint_notification(self, complaint_data: Dict[str, Any]) -> bool:
         """Отправка уведомления о новой жалобе"""
         if not self.bot_token or not self.chat_id:
+            print("Telegram bot not configured")
             return False
         
-        # Формируем красивое сообщение
-        message = f"""
+        try:
+            # Формируем красивое сообщение
+            message = f"""
 🚨 <b>Новая жалоба #{complaint_data.get('id', 'N/A')}</b>
 
 📝 <b>Текст:</b> {complaint_data.get('text', 'N/A')}
@@ -253,13 +265,26 @@ class TelegramService:
 🕐 <b>Время:</b> {complaint_data.get('created_at', 'N/A')}
 
 {'⚠️ <b>Спам:</b> Да' if complaint_data.get('is_spam', False) else ''}
-        """.strip()
-        
-        return await self.send_notification(message)
+            """.strip()
+            
+            success = await self.send_notification(message)
+            if success:
+                print(f"Successfully sent Telegram notification for complaint {complaint_data.get('id')}")
+            else:
+                print(f"Failed to send Telegram notification for complaint {complaint_data.get('id')}")
+            return success
+        except Exception as e:
+            print(f"Error sending Telegram notification for complaint {complaint_data.get('id')}: {e}")
+            return False
     
     async def send_daily_report(self, complaints_count: int, open_complaints: int) -> bool:
         """Отправка ежедневного отчета"""
-        message = f"""
+        if not self.bot_token or not self.chat_id:
+            print("Telegram bot not configured for daily report")
+            return False
+        
+        try:
+            message = f"""
 📊 <b>Ежедневный отчет</b>
 
 📈 <b>Всего жалоб за день:</b> {complaints_count}
@@ -267,14 +292,22 @@ class TelegramService:
 ✅ <b>Обработано:</b> {complaints_count - open_complaints}
 
 🕐 Отчет сформирован автоматически
-        """.strip()
-        
-        return await self.send_notification(message) 
+            """.strip()
+            
+            success = await self.send_notification(message)
+            if success:
+                print(f"Successfully sent daily report: {complaints_count} total, {open_complaints} open")
+            else:
+                print(f"Failed to send daily report")
+            return success
+        except Exception as e:
+            print(f"Error sending daily report: {e}")
+            return False
 
 class GoogleSheetsService:
     def __init__(self):
         self.credentials_file = os.getenv("GOOGLE_SHEETS_CREDENTIALS_FILE", "google-credentials.json")
-        self.spreadsheet_id = os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID")
+        self.spreadsheet_id = str(os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID", ""))
         self.sheet_name = os.getenv("GOOGLE_SHEET_NAME", "Жалобы")
         
         # Настройка Google Sheets API
@@ -307,20 +340,19 @@ class GoogleSheetsService:
             self.worksheet = None
     
     async def create_headers_if_needed(self) -> bool:
-        """Создание заголовков в Google Sheets если их нет"""
         if not self.worksheet:
+            print("Google Sheets not configured or worksheet not available")
             return False
-        
         try:
-            # Проверяем, есть ли уже заголовки
-            headers = self.worksheet.row_values(1)
+            loop = asyncio.get_running_loop()
+            headers = await loop.run_in_executor(None, self.worksheet.row_values, 1)
             if not headers or len(headers) < 8:
-                # Создаем заголовки
-                headers = [
+                headers_list = [
                     "ID", "Текст", "Категория", "Тональность", 
                     "Статус", "IP адрес", "Дата создания", "Спам"
                 ]
-                self.worksheet.update('A1:H1', [headers])
+                update_partial = functools.partial(self.worksheet.update, 'A1:H1', [headers_list])  # type: ignore
+                await loop.run_in_executor(None, update_partial)
                 print("Google Sheets headers created")
             return True
         except Exception as e:
@@ -330,16 +362,13 @@ class GoogleSheetsService:
     async def add_complaint_to_sheet(self, complaint_data: Dict[str, Any]) -> bool:
         """Добавление жалобы в Google Sheets"""
         if not self.worksheet:
+            print("Google Sheets not configured or worksheet not available")
             return False
-        
         try:
-            # Создаем заголовки если нужно
             await self.create_headers_if_needed()
-            
-            # Подготавливаем данные для записи
             row_data = [
                 complaint_data.get('id', ''),
-                complaint_data.get('text', ''),
+                complaint_data.get('text', '')[:1000],
                 complaint_data.get('category', ''),
                 complaint_data.get('sentiment', ''),
                 complaint_data.get('status', ''),
@@ -347,53 +376,46 @@ class GoogleSheetsService:
                 complaint_data.get('created_at', ''),
                 'Да' if complaint_data.get('is_spam', False) else 'Нет'
             ]
-            
-            # Добавляем новую строку
-            self.worksheet.append_row(row_data)
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(None, self.worksheet.append_row, row_data)
+            print(f"Successfully added complaint {complaint_data.get('id')} to Google Sheets")
             return True
         except Exception as e:
-            print(f"Error adding complaint to sheet: {e}")
+            print(f"Error adding complaint {complaint_data.get('id')} to Google Sheets: {e}")
             return False
     
     async def get_complaints_summary(self) -> Optional[Dict[str, Any]]:
         """Получение сводки жалоб из Google Sheets"""
         if not self.worksheet:
+            print("Google Sheets not configured or worksheet not available")
             return None
-        
         try:
-            # Получаем все данные
-            all_values = self.worksheet.get_all_values()
-            
-            if len(all_values) <= 1:  # Только заголовки
+            loop = asyncio.get_running_loop()
+            all_values = await loop.run_in_executor(None, self.worksheet.get_all_values)
+            if len(all_values) <= 1:
                 return {
                     "total_complaints": 0,
                     "categories": {},
                     "sentiments": {},
                     "statuses": {}
                 }
-            
-            # Пропускаем заголовки
             data_rows = all_values[1:]
-            
             summary = {
                 "total_complaints": len(data_rows),
                 "categories": {},
                 "sentiments": {},
                 "statuses": {}
             }
-            
-            # Анализируем данные
             for row in data_rows:
                 if len(row) >= 5:
                     category = row[2] if len(row) > 2 else "Неизвестно"
                     sentiment = row[3] if len(row) > 3 else "Неизвестно"
                     status = row[4] if len(row) > 4 else "Неизвестно"
-                    
                     summary["categories"][category] = summary["categories"].get(category, 0) + 1
                     summary["sentiments"][sentiment] = summary["sentiments"].get(sentiment, 0) + 1
                     summary["statuses"][status] = summary["statuses"].get(status, 0) + 1
-            
+            print(f"Successfully retrieved summary from Google Sheets: {summary['total_complaints']} complaints")
             return summary
         except Exception as e:
-            print(f"Error getting summary: {e}")
+            print(f"Error getting summary from Google Sheets: {e}")
             return None 
