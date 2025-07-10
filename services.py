@@ -14,9 +14,9 @@ class SentimentService:
         self.base_url = "https://api.apilayer.com/sentiment/analysis"
     
     async def analyze_sentiment(self, text: str) -> str:
-        """Анализ тональности текста через APILayer"""
+        """Анализ тональности текста через APILayer или простые правила"""
         if not self.api_key:
-            return "unknown"
+            return self._simple_sentiment_analysis(text)
         
         try:
             async with httpx.AsyncClient() as client:
@@ -29,13 +29,64 @@ class SentimentService:
                 
                 if response.status_code == 200:
                     data = response.json()
+                    # Проверяем, не вернул ли API ошибку
+                    if "result" in data and "Unable to evaluate expression" in data["result"]:
+                        print(f"Sentiment API cannot process text: {text[:50]}...")
+                        return self._simple_sentiment_analysis(text)
+                    
                     sentiment = data.get("sentiment", "unknown")
                     return sentiment.lower()
                 else:
-                    return "unknown"
+                    print(f"Sentiment API error: {response.status_code}")
+                    return self._simple_sentiment_analysis(text)
         except Exception as e:
             print(f"Error analyzing sentiment: {e}")
-            return "unknown"
+            return self._simple_sentiment_analysis(text)
+    
+    def _simple_sentiment_analysis(self, text: str) -> str:
+        """Простой анализ тональности на основе ключевых слов"""
+        print(f"DEBUG: [SENTIMENT] Start analysis for: {text}")
+        text_lower = text.lower()
+        
+        # Негативные слова
+        negative_words = [
+            'плохо', 'ужасно', 'отвратительно', 'не работает', 'ошибка',
+            'проблема', 'неудобно', 'медленно', 'зависает', 'вылетает',
+            'не загружается', 'баг', 'глюк', 'сломано', 'неправильно',
+            'неудовлетворительно', 'разочарован', 'злой', 'раздражен',
+            'грубят', 'хамство', 'некомпетентно', 'обман', 'разочарование',
+            'негатив', 'ненавижу', 'ненависть', 'кошмар', 'катастрофа',
+            'отстой', 'бесполезно', 'бесполезный', 'бесполезная', 'бесполезное',
+            'бесполезные', 'бесполезен', 'бесполезна', 'бесполезно', 'бесполезны'
+        ]
+        
+        # Позитивные слова
+        positive_words = ['хорошо', 'отлично', 'прекрасно', 'удобно', 'быстро', 
+                         'работает', 'нравится', 'доволен', 'спасибо', 'благодарен',
+                         'рекомендую', 'супер', 'класс', 'замечательно']
+        
+        # Нейтральные слова
+        neutral_words = ['информация', 'вопрос', 'уточнение', 'просьба', 'запрос',
+                        'сообщение', 'уведомление', 'статус', 'проверить']
+        
+        # Подсчитываем слова
+        negative_count = sum(1 for word in negative_words if word in text_lower)
+        positive_count = sum(1 for word in positive_words if word in text_lower)
+        neutral_count = sum(1 for word in neutral_words if word in text_lower)
+        
+        print(f"DEBUG: [SENTIMENT] Negative: {negative_count}, Positive: {positive_count}, Neutral: {neutral_count}")
+        
+        # Определяем тональность
+        if negative_count > positive_count and negative_count > 0:
+            result = "negative"
+        elif positive_count > negative_count and positive_count > 0:
+            result = "positive"
+        elif neutral_count > 0 or (negative_count == 0 and positive_count == 0):
+            result = "neutral"
+        else:
+            result = "neutral"
+        print(f"DEBUG: [SENTIMENT] Result: {result}")
+        return result
 
 class SpamService:
     def __init__(self):

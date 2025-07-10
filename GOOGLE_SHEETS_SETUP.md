@@ -1,8 +1,8 @@
-# 📊 Настройка Google Sheets интеграции
+# 📊 Настройка Google Sheets интеграции для системы обработки жалоб
 
 ## 📋 Обзор
 
-Google Sheets интеграция позволяет автоматически экспортировать жалобы в таблицы Google Sheets для дальнейшего анализа и отчетности.
+Google Sheets интеграция позволяет автоматически экспортировать жалобы в таблицы Google Sheets для дальнейшего анализа, отчетности и интеграции с n8n workflow. Система поддерживает автоматический экспорт при создании жалоб и ручной экспорт по запросу.
 
 ## 🚀 Быстрая настройка (10 минут)
 
@@ -69,24 +69,27 @@ Google Sheets интеграция позволяет автоматически
 # Google Sheets
 GOOGLE_SHEETS_CREDENTIALS_FILE=google-credentials.json
 GOOGLE_SHEETS_SPREADSHEET_ID=ваш_id_таблицы_здесь
+GOOGLE_SHEET_NAME=Лист1
 ```
 
 ### Шаг 8: Установка зависимостей
 
 ```bash
-pip install gspread google-auth
+# Зависимости уже включены в requirements.txt
+pip install -r requirements.txt
 ```
 
 ### Шаг 9: Тестирование
 
 ```bash
-# Настройка заголовков
-curl -X POST "http://localhost:8000/sheets/setup/"
+# Через Makefile
+make sheets-test
 
-# Создание тестовой жалобы
-curl -X POST "http://localhost:8000/complaints/" \
-  -H "Content-Type: application/json" \
-  -d '{"text": "Тестовая жалоба для Google Sheets"}'
+# Или напрямую
+python tests/unit/test_google_sheets.py
+
+# Или через API
+curl -X POST "http://localhost:8000/sheets/setup/"
 ```
 
 ## 🔧 Подробная настройка
@@ -95,16 +98,17 @@ curl -X POST "http://localhost:8000/complaints/" \
 
 После настройки ваша таблица будет иметь следующие колонки:
 
-| Колонка | Описание |
-|---------|----------|
-| A | ID жалобы |
-| B | Текст жалобы |
-| C | Категория |
-| D | Тональность |
-| E | Статус |
-| F | Дата создания |
-| G | IP адрес |
-| H | Спам |
+| Колонка | Описание | Пример |
+|---------|----------|--------|
+| A | ID жалобы | 1 |
+| B | Текст жалобы | Сайт не загружается |
+| C | Категория | техническая |
+| D | Тональность | negative |
+| E | Статус | open |
+| F | Дата создания | 2024-01-15 14:30:25 |
+| G | IP адрес | 192.168.1.1 |
+| H | Спам score | 0.1 |
+| I | Геолокация | Moscow, Russia |
 
 ### Настройка автоматического экспорта
 
@@ -116,70 +120,37 @@ curl -X POST "http://localhost:8000/sheets/export/"
 
 # Получение сводки
 curl "http://localhost:8000/sheets/summary/"
+
+# Настройка заголовков
+curl -X POST "http://localhost:8000/sheets/setup/"
 ```
 
 ## 🧪 Тестирование интеграции
 
-### Тестовый скрипт
-
-Создайте файл `test_sheets.py`:
-
-```python
-#!/usr/bin/env python3
-import asyncio
-import httpx
-from dotenv import load_dotenv
-
-load_dotenv()
-
-async def test_google_sheets():
-    base_url = "http://localhost:8000"
-    
-    print("🧪 Тестирование Google Sheets интеграции")
-    print("=" * 50)
-    
-    async with httpx.AsyncClient() as client:
-        # 1. Настройка заголовков
-        print("1. Настройка заголовков...")
-        response = await client.post(f"{base_url}/sheets/setup/")
-        if response.status_code == 200:
-            print("✅ Заголовки созданы")
-        else:
-            print(f"❌ Ошибка: {response.text}")
-        
-        # 2. Создание тестовой жалобы
-        print("2. Создание тестовой жалобы...")
-        complaint_data = {"text": "Тестовая жалоба для Google Sheets"}
-        response = await client.post(
-            f"{base_url}/complaints/",
-            json=complaint_data
-        )
-        if response.status_code == 200:
-            print("✅ Жалоба создана и экспортирована")
-        else:
-            print(f"❌ Ошибка: {response.text}")
-        
-        # 3. Получение сводки
-        print("3. Получение сводки...")
-        response = await client.get(f"{base_url}/sheets/summary/")
-        if response.status_code == 200:
-            data = response.json()
-            summary = data.get("data", {})
-            print(f"✅ Сводка получена: {summary.get('total_complaints', 0)} жалоб")
-        else:
-            print(f"❌ Ошибка: {response.text}")
-
-if __name__ == "__main__":
-    asyncio.run(test_google_sheets())
-```
-
-### Ручное тестирование
+### Быстрое тестирование
 
 ```bash
-# 1. Настройка
+# Через Makefile
+make sheets-test
+
+# Или напрямую
+python tests/unit/test_google_sheets.py
+```
+
+Тест проверит:
+- ✅ Наличие credentials файла
+- ✅ Подключение к Google Sheets API
+- ✅ Создание заголовков таблицы
+- ✅ Экспорт тестовой жалобы
+- ✅ Получение сводки
+
+### API тестирование
+
+```bash
+# 1. Настройка заголовков
 curl -X POST "http://localhost:8000/sheets/setup/"
 
-# 2. Создание жалобы
+# 2. Создание тестовой жалобы
 curl -X POST "http://localhost:8000/complaints/" \
   -H "Content-Type: application/json" \
   -d '{"text": "Сайт не работает, не могу войти в аккаунт"}'
@@ -191,6 +162,34 @@ curl "http://localhost:8000/sheets/summary/"
 curl -X POST "http://localhost:8000/sheets/export/"
 ```
 
+### Ручное тестирование
+
+```bash
+# Проверка переменных окружения
+echo $GOOGLE_SHEETS_CREDENTIALS_FILE
+echo $GOOGLE_SHEETS_SPREADSHEET_ID
+
+# Проверка файла credentials
+ls -la google-credentials.json
+
+# Проверка подключения к Google Sheets
+python -c "
+import gspread
+from google.oauth2.service_account import Credentials
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+creds = Credentials.from_service_account_file(
+    os.getenv('GOOGLE_SHEETS_CREDENTIALS_FILE'),
+    scopes=['https://www.googleapis.com/auth/spreadsheets']
+)
+gc = gspread.authorize(creds)
+sheet = gc.open_by_key(os.getenv('GOOGLE_SHEETS_SPREADSHEET_ID'))
+print('✅ Подключение к Google Sheets успешно')
+"
+```
+
 ## 📊 API Endpoints
 
 ### Настройка Google Sheets
@@ -199,17 +198,61 @@ POST /sheets/setup/
 ```
 Создает заголовки таблицы если их нет.
 
-### Получение сводки
-```bash
-GET /sheets/summary/
+**Ответ:**
+```json
+{
+  "status": "success",
+  "message": "Google Sheets headers created successfully",
+  "data": {
+    "headers": ["ID", "Text", "Category", "Sentiment", "Status", "Timestamp", "IP", "Spam Score", "Location"]
+  }
+}
 ```
-Возвращает статистику жалоб из Google Sheets.
 
 ### Экспорт жалоб
 ```bash
 POST /sheets/export/
 ```
-Экспортирует все жалобы из базы данных в Google Sheets.
+Экспортирует все жалобы в Google Sheets.
+
+**Ответ:**
+```json
+{
+  "status": "success",
+  "message": "Complaints exported successfully",
+  "data": {
+    "exported_count": 15,
+    "total_rows": 16
+  }
+}
+```
+
+### Получение сводки
+```bash
+GET /sheets/summary/
+```
+Возвращает сводку по экспортированным жалобам.
+
+**Ответ:**
+```json
+{
+  "status": "success",
+  "data": {
+    "total_complaints": 15,
+    "by_category": {
+      "техническая": 10,
+      "оплата": 3,
+      "другое": 2
+    },
+    "by_sentiment": {
+      "negative": 12,
+      "neutral": 2,
+      "positive": 1
+    },
+    "last_export": "2024-01-15 14:30:25"
+  }
+}
+```
 
 ## 🔄 Интеграция с n8n
 
@@ -217,108 +260,202 @@ POST /sheets/export/
 
 1. **Schedule Trigger** - запуск каждый час
 2. **HTTP Request** - получение новых жалоб
-3. **Google Sheets** - добавление записей
-4. **HTTP Request** - обновление статуса
+3. **Switch** - фильтрация по категориям
+4. **Google Sheets** - добавление записей для жалоб об оплате
 
 ### Настройка узла Google Sheets в n8n
 
 1. **Добавьте узел Google Sheets**
-2. **Выберите операцию**: Append to Sheet
+2. **Выберите операцию**: Append
 3. **Spreadsheet**: Выберите вашу таблицу
-4. **Sheet**: Sheet1
-5. **Data**: Настройте маппинг полей
+4. **Sheet**: Выберите лист (обычно "Лист1")
+5. **Data**: Настройте маппинг данных
+
+### Пример workflow
+
+```json
+{
+  "nodes": [
+    {
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [240, 300],
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "hour"}]
+        }
+      }
+    },
+    {
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [460, 300],
+      "parameters": {
+        "url": "http://localhost:8000/complaints/recent/?hours=1&status=open",
+        "method": "GET"
+      }
+    },
+    {
+      "type": "n8n-nodes-base.switch",
+      "position": [680, 300],
+      "parameters": {
+        "rules": {
+          "rules": [
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.category}}",
+                    "operation": "equals",
+                    "value2": "оплата"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [900, 200],
+      "parameters": {
+        "operation": "append",
+        "spreadsheetId": "{{$env.GOOGLE_SHEETS_SPREADSHEET_ID}}",
+        "sheetName": "Лист1",
+        "options": {
+          "valueInputOption": "RAW"
+        },
+        "data": [
+          {
+            "id": "={{$json.id}}",
+            "text": "={{$json.text}}",
+            "category": "={{$json.category}}",
+            "sentiment": "={{$json.sentiment}}",
+            "status": "={{$json.status}}",
+            "timestamp": "={{$json.timestamp}}"
+          }
+        ]
+      }
+    }
+  ]
+}
+```
 
 ## 🛠️ Устранение неполадок
 
-### Проблема: Ошибка аутентификации
+### Проблема: Файл credentials не найден
 
-1. **Проверьте файл credentials**:
-   ```bash
-   ls -la google-credentials.json
-   ```
+```bash
+# Проверка файла
+ls -la google-credentials.json
 
-2. **Проверьте переменные окружения**:
-   ```bash
-   echo $GOOGLE_SHEETS_CREDENTIALS_FILE
-   echo $GOOGLE_SHEETS_SPREADSHEET_ID
-   ```
+# Проверка переменной окружения
+echo $GOOGLE_SHEETS_CREDENTIALS_FILE
 
-3. **Проверьте права доступа**:
-   - Убедитесь что сервисный аккаунт добавлен в таблицу
-   - Проверьте что у него права "Editor"
+# Проверка прав доступа
+chmod 600 google-credentials.json
+```
+
+### Проблема: Ошибка доступа к Google Sheets
+
+```bash
+# Проверка ID таблицы
+echo $GOOGLE_SHEETS_SPREADSHEET_ID
+
+# Проверка email сервисного аккаунта
+python -c "
+import json
+with open('google-credentials.json') as f:
+    data = json.load(f)
+    print('Service account email:', data['client_email'])
+"
+
+# Проверка прав доступа в Google Sheets
+# Убедитесь, что email сервисного аккаунта добавлен с правами Editor
+```
+
+### Проблема: Ошибка "Invalid credentials"
+
+```bash
+# Проверка формата JSON файла
+python -c "
+import json
+with open('google-credentials.json') as f:
+    data = json.load(f)
+    print('JSON valid:', bool(data))
+"
+
+# Проверка обязательных полей
+python -c "
+import json
+with open('google-credentials.json') as f:
+    data = json.load(f)
+    required = ['type', 'project_id', 'private_key_id', 'private_key', 'client_email']
+    for field in required:
+        print(f'{field}:', bool(data.get(field)))
+"
+```
 
 ### Проблема: Таблица не найдена
 
-1. **Проверьте ID таблицы**:
-   - Убедитесь что ID правильный
-   - Проверьте что таблица существует
-
-2. **Проверьте доступ**:
-   ```bash
-   # Тест подключения
-   curl "http://localhost:8000/sheets/setup/"
-   ```
-
-### Проблема: Зависимости не установлены
-
 ```bash
-# Установка зависимостей
-pip install gspread google-auth
+# Проверка ID таблицы в URL
+# https://docs.google.com/spreadsheets/d/ID_ТАБЛИЦЫ/edit
 
-# Проверка установки
-python -c "import gspread; print('gspread установлен')"
+# Проверка подключения
+python -c "
+import gspread
+from google.oauth2.service_account import Credentials
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+try:
+    creds = Credentials.from_service_account_file(
+        os.getenv('GOOGLE_SHEETS_CREDENTIALS_FILE'),
+        scopes=['https://www.googleapis.com/auth/spreadsheets']
+    )
+    gc = gspread.authorize(creds)
+    sheet = gc.open_by_key(os.getenv('GOOGLE_SHEETS_SPREADSHEET_ID'))
+    print('✅ Таблица найдена:', sheet.title)
+except Exception as e:
+    print('❌ Ошибка:', e)
+"
 ```
 
-### Проблема: Ошибки в логах
+## 📊 Мониторинг и логи
+
+### Просмотр логов Google Sheets
 
 ```bash
-# Просмотр логов
-tail -f logs/app.log
+# Поиск Google Sheets логов
+grep -i "google.*sheets" logs/app.log
 
-# Поиск ошибок Google Sheets
-grep -i "sheets\|google" logs/app.log
+# Поиск ошибок экспорта
+grep -i "sheets.*error" logs/app.log
+
+# Поиск успешных экспортов
+grep -i "sheets.*export" logs/app.log
 ```
 
-## 📈 Мониторинг
-
-### Проверка экспорта
+### Проверка статистики
 
 ```bash
-# Получение сводки
-curl "http://localhost:8000/sheets/summary/"
+# Количество экспортированных жалоб
+grep -c "Google Sheets export" logs/app.log
 
-# Проверка в Google Sheets
-# Откройте вашу таблицу и проверьте новые записи
-```
-
-### Автоматические отчеты
-
-Настройте автоматическое создание отчетов:
-
-```bash
-# Ежедневный экспорт
-curl -X POST "http://localhost:8000/sheets/export/"
-
-# Получение статистики
-curl "http://localhost:8000/sheets/summary/"
+# Количество ошибок
+grep -c "Google Sheets error" logs/app.log
 ```
 
 ## 🔒 Безопасность
 
-### Рекомендации
+### Рекомендации по безопасности
 
-1. **Не коммитьте credentials**:
-   ```bash
-   echo "google-credentials.json" >> .gitignore
-   ```
-
-2. **Ограничьте права**:
-   - Дайте сервисному аккаунту только необходимые права
-   - Используйте отдельную таблицу для тестирования
-
-3. **Мониторьте использование**:
-   - Следите за квотами Google Sheets API
-   - Проверяйте логи на подозрительную активность
+1. **Не публикуйте credentials файл** в публичных репозиториях
+2. **Используйте .env файл** для хранения путей
+3. **Ограничьте права** сервисного аккаунта только к нужным таблицам
+4. **Регулярно ротируйте ключи** при необходимости
+5. **Мониторьте логи** на подозрительную активность
 
 ### Переменные окружения
 
@@ -328,33 +465,57 @@ GOOGLE_SHEETS_CREDENTIALS_FILE=google-credentials.json
 GOOGLE_SHEETS_SPREADSHEET_ID=ваш_id_таблицы
 
 # Опциональные
+GOOGLE_SHEET_NAME=Лист1
+GOOGLE_SHEETS_ENABLED=true
 GOOGLE_SHEETS_AUTO_EXPORT=true
-GOOGLE_SHEETS_BACKUP_ENABLED=true
 ```
 
-## 🎉 Готово!
+## 📚 Дополнительные ресурсы
 
-После настройки ваша система будет:
+### Полезные ссылки
 
-- ✅ Автоматически экспортировать жалобы в Google Sheets
-- ✅ Создавать красивые отчеты
-- ✅ Интегрироваться с n8n
-- ✅ Предоставлять статистику
+- [Google Sheets API Documentation](https://developers.google.com/sheets/api)
+- [Google Cloud Console](https://console.cloud.google.com/)
+- [gspread Documentation](https://gspread.readthedocs.io/)
+- [Google Auth Documentation](https://google-auth.readthedocs.io/)
 
-### Проверка работы
+### Команды для разработки
 
-1. **Создайте жалобу**:
-   ```bash
-   curl -X POST "http://localhost:8000/complaints/" \
-     -H "Content-Type: application/json" \
-     -d '{"text": "Тестовая жалоба"}'
-   ```
+```bash
+# Тестирование с подробным выводом
+python tests/unit/test_google_sheets.py --verbose
 
-2. **Проверьте Google Sheets** - новая запись должна появиться автоматически
+# Проверка конфигурации
+python -c "
+import os
+from dotenv import load_dotenv
+load_dotenv()
+print('Credentials file:', bool(os.getenv('GOOGLE_SHEETS_CREDENTIALS_FILE')))
+print('Spreadsheet ID:', bool(os.getenv('GOOGLE_SHEETS_SPREADSHEET_ID')))
+"
 
-3. **Получите сводку**:
-   ```bash
-   curl "http://localhost:8000/sheets/summary/"
-   ```
+# Мониторинг в реальном времени
+tail -f logs/app.log | grep -i "google.*sheets"
+```
 
-Для получения дополнительной помощи обратитесь к документации Google Sheets API или создайте issue в репозитории проекта. 
+## 🎯 Готовые возможности
+
+### ✅ Что работает из коробки:
+
+- Автоматический экспорт жалоб при создании
+- Ручной экспорт всех жалоб
+- Создание заголовков таблицы
+- Получение сводки по экспортированным данным
+- Интеграция с n8n workflow
+- Обработка ошибок и fallback
+- Логирование всех операций
+- Полное тестирование интеграции
+
+### 🚀 Готово к production:
+
+- Безопасное хранение credentials
+- Валидация входных данных
+- Graceful degradation при ошибках
+- Мониторинг и логирование
+- Документация и примеры
+- Поддержка различных форматов данных 

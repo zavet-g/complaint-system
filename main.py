@@ -45,7 +45,9 @@ async def create_complaint(
         spam_result = await spam_service.check_spam(complaint.text)
         
         # Анализ тональности
+        print(f"DEBUG: [MAIN] About to analyze sentiment for: {complaint.text[:50]}...")
         sentiment = await sentiment_service.analyze_sentiment(complaint.text)
+        print(f"DEBUG: [MAIN] Sentiment result: {sentiment}")
         
         # Определение категории с помощью ИИ
         category = await ai_category_service.categorize_complaint(complaint.text)
