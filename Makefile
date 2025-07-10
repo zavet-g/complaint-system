@@ -7,6 +7,7 @@ PYTHON = python3
 PIP = pip3
 APP_NAME = complaint-system
 PORT = 8000
+CONTAINER_NAME = complaint-api
 
 help: ## Показать справку
 	@echo "Доступные команды:"
@@ -23,6 +24,18 @@ dev: ## Запустить в режиме разработки
 
 test: ## Запустить все тесты
 	$(PYTHON) tests/run_all_tests.py
+
+test-docker: ## Запустить все тесты в Docker контейнере
+	docker exec $(CONTAINER_NAME) python3 tests/run_all_tests.py
+
+test-docker-unit: ## Запустить unit тесты в Docker контейнере
+	docker exec $(CONTAINER_NAME) python3 -m pytest tests/unit/ -v
+
+test-docker-integration: ## Запустить интеграционные тесты в Docker контейнере
+	docker exec $(CONTAINER_NAME) python3 tests/integration/test_integration.py
+
+test-docker-api: ## Запустить API тесты в Docker контейнере
+	docker exec $(CONTAINER_NAME) python3 tests/api/test_api.py
 
 test-api: ## Запустить API тесты
 	$(PYTHON) tests/api/test_api.py
@@ -51,6 +64,12 @@ docker-run: ## Запустить в Docker
 docker-stop: ## Остановить Docker контейнеры
 	docker-compose down
 
+docker-logs: ## Показать логи Docker контейнера
+	docker logs $(CONTAINER_NAME) -f
+
+docker-logs-tail: ## Показать последние логи Docker контейнера
+	docker logs $(CONTAINER_NAME) --tail 50
+
 logs: ## Показать логи
 	docker-compose logs -f
 
@@ -65,17 +84,35 @@ setup: ## Первоначальная настройка
 health: ## Проверить здоровье API
 	curl http://localhost:$(PORT)/health/
 
+health-docker: ## Проверить здоровье API в Docker
+	docker exec $(CONTAINER_NAME) curl http://localhost:$(PORT)/health/
+
 create-complaint: ## Создать тестовую жалобу
 	curl -X POST "http://localhost:$(PORT)/complaints/" \
 		-H "Content-Type: application/json" \
 		-d '{"text": "Тестовая жалоба - сайт не работает"}'
 
+create-complaint-docker: ## Создать тестовую жалобу в Docker
+	docker exec $(CONTAINER_NAME) curl -X POST "http://localhost:$(PORT)/complaints/" \
+		-H "Content-Type: application/json" \
+		-d '{"text": "Тестовая жалоба из Docker - сайт не работает"}'
+
 list-complaints: ## Получить список жалоб
 	curl http://localhost:$(PORT)/complaints/
+
+list-complaints-docker: ## Получить список жалоб в Docker
+	docker exec $(CONTAINER_NAME) curl http://localhost:$(PORT)/complaints/
 
 telegram-test: ## Тест Telegram уведомлений
 	curl -X POST "http://localhost:$(PORT)/telegram/test/"
 
+telegram-test-docker: ## Тест Telegram уведомлений в Docker
+	docker exec $(CONTAINER_NAME) curl -X POST "http://localhost:$(PORT)/telegram/test/"
+
 sheets-test: ## Тест Google Sheets
 	curl -X POST "http://localhost:$(PORT)/sheets/setup/"
-	curl http://localhost:$(PORT)/sheets/summary/ 
+	curl http://localhost:$(PORT)/sheets/summary/
+
+sheets-test-docker: ## Тест Google Sheets в Docker
+	docker exec $(CONTAINER_NAME) curl -X POST "http://localhost:$(PORT)/sheets/setup/"
+	docker exec $(CONTAINER_NAME) curl http://localhost:$(PORT)/sheets/summary/ 
