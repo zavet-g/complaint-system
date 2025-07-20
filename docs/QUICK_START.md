@@ -60,7 +60,7 @@ GOOGLE_SHEETS_SPREADSHEET_ID=ваш_id_таблицы
 ./run.sh
 
 # Или вручную
-python main.py
+python3 main.py
 ```
 
 ## ✅ Проверка работы

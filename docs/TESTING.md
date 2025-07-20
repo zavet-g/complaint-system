@@ -307,7 +307,7 @@ chmod 666 complaints.db
 
 # Пересоздание БД
 rm complaints.db
-python main.py
+python3 main.py
 ```
 
 ### Проблема: Telegram не работает

@@ -110,7 +110,7 @@ GOOGLE_SHEET_NAME=Лист1
 ./run.sh
 
 # Или вручную
-python main.py
+python3 main.py
 
 # Или через Makefile
 make run
@@ -292,7 +292,7 @@ nano .env
 ### Шаг 4: Запуск приложения
 ```bash
 # Запуск через Python
-python main.py
+python3 main.py
 
 # Или через uvicorn
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
@@ -337,7 +337,7 @@ chmod 666 complaints.db
 
 # Пересоздание БД
 rm complaints.db
-python main.py
+python3 main.py
 ```
 
 ### Проблема: Telegram не работает

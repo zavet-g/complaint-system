@@ -104,7 +104,7 @@ make run
 
 **Ручной запуск**
 ```bash
-python main.py
+python3 main.py
 ```
 
 **Запуск через Docker**
