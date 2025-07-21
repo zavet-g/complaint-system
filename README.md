@@ -1,50 +1,80 @@
 # 🤖 Complaint System — AI-powered Customer Complaint Platform
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-005571?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![OpenAI](https://img.shields.io/badge/OpenAI-412991?logo=openai&logoColor=white)](https://openai.com/)
-[![Telegram](https://img.shields.io/badge/Telegram-26A5E4?logo=telegram&logoColor=white)](https://telegram.org/)
-[![Google Sheets](https://img.shields.io/badge/Google%20Sheets-34A853?logo=google-sheets&logoColor=white)](https://www.google.com/sheets/about/)
-[![Tests](https://img.shields.io/badge/Tests-passing-brightgreen)](#)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+<p align="center">
+  <img src="https://img.shields.io/badge/FastAPI-005571?logo=fastapi&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white"/>
+  <img src="https://img.shields.io/badge/OpenAI-412991?logo=openai&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Telegram-26A5E4?logo=telegram&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Google%20Sheets-34A853?logo=google-sheets&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Python-3.11-blue?logo=python"/>
+  <img src="https://img.shields.io/github/actions/workflow/status/zavet-g/complaint-system/ci.yml?label=CI&logo=github"/>
+  <img src="https://img.shields.io/badge/Tests-passing-brightgreen"/>
+  <img src="https://img.shields.io/badge/License-MIT-yellow.svg"/>
+</p>
 
 ---
 
-## Описание
-
-**Complaint System** — это современная система обработки жалоб клиентов с поддержкой искусственного интеллекта:  
-- автоматическая категоризация обращений  
-- анализ тональности  
-- уведомления в реальном времени  
-- интеграция с Telegram, Google Sheets и OpenAI  
-- готова к продакшену, поддерживает Docker и комплексное тестирование
+<p align="center">
+  <b>Современная система обработки жалоб клиентов с поддержкой искусственного интеллекта</b><br>
+  <i>Автоматическая категоризация, анализ тональности, уведомления в реальном времени, интеграция с Telegram, Google Sheets и OpenAI</i>
+</p>
 
 ---
 
-## 🚀 Возможности
+## 🖼️ Скриншоты
 
-- Создание и управление жалобами через REST API
-- AI-категоризация с fallback на ключевые слова
-- Анализ тональности (русский и английский)
-- Уведомления в Telegram (при настройке)
-- Экспорт в Google Sheets (при настройке)
-- Полный набор тестов
-- Docker поддержка
-- Автоматическая документация API (Swagger/OpenAPI)
-- Health checks, логирование, валидация данных
+<p align="center">
+  <img src="docs/assets/demo1.png" width="350" alt="Demo 1"/>
+  <img src="docs/assets/demo2.png" width="350" alt="Demo 2"/>
+</p>
 
 ---
 
-## 🛠️ Технологический стек
+## 🚦 Архитектура проекта
 
-- **FastAPI** — современный асинхронный веб-фреймворк
-- **SQLAlchemy 2.0** — ORM для работы с БД
-- **Pydantic** — валидация и сериализация данных
-- **httpx** — асинхронные HTTP-запросы
-- **python-dotenv** — управление переменными окружения
-- **pytest** — тестирование
-- **Docker** — контейнеризация
-- **n8n** — автоматизация процессов
+```mermaid
+flowchart TD
+    A[Клиент] -->|Жалоба| B(API FastAPI)
+    B --> C[AI Категоризация<br/>OpenAI]
+    B --> D[Анализ тональности<br/>APILayer]
+    B --> E[Проверка на спам<br/>API Ninjas]
+    B --> F[Геолокация<br/>IP API]
+    B --> G[БД<br/>SQLAlchemy]
+    B --> H[Telegram Bot]
+    B --> I[Google Sheets]
+    B --> J[n8n Automation]
+```
+
+---
+
+## ✨ Возможности
+
+| 🚀 Функция                | 📝 Описание                                                                 |
+|--------------------------|-----------------------------------------------------------------------------|
+| ⚡ REST API               | Современный FastAPI с автодокументацией                                     |
+| 🤖 AI-категоризация       | GPT-3.5 Turbo + fallback на ключевые слова                                  |
+| 😊 Анализ тональности     | APILayer Sentiment Analysis, поддержка русского языка                       |
+| 🚫 Проверка на спам       | API Ninjas                                                                  |
+| 🌍 Геолокация             | IP API                                                                      |
+| 🔔 Telegram уведомления   | Мгновенные оповещения о важных жалобах                                      |
+| 📊 Google Sheets экспорт  | Автоматический экспорт жалоб                                                |
+| 🔄 n8n интеграция         | Автоматизация бизнес-процессов                                              |
+| 🧪 Тесты                  | Unit, integration, API, Makefile                                            |
+| 🐳 Docker                 | Готовность к продакшену, контейнеризация                                    |
+
+---
+
+## 🛠️ Технологии
+
+<p align="center">
+  <img src="https://img.shields.io/badge/FastAPI-005571?logo=fastapi&logoColor=white"/>
+  <img src="https://img.shields.io/badge/SQLAlchemy-1e5c3a?logo=sqlalchemy&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Pydantic-0e6ba8?logo=pydantic&logoColor=white"/>
+  <img src="https://img.shields.io/badge/httpx-2b50a1?logo=python&logoColor=white"/>
+  <img src="https://img.shields.io/badge/pytest-0a9edc?logo=pytest&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white"/>
+  <img src="https://img.shields.io/badge/n8n-ef6c00?logo=n8n&logoColor=white"/>
+</p>
 
 ---
 
@@ -59,7 +89,10 @@
 
 ---
 
-## 📁 Структура проекта
+## 🗂️ Структура проекта
+
+<details>
+<summary>Показать структуру</summary>
 
 ```
 complaint-system/
@@ -95,52 +128,33 @@ complaint-system/
 ├── n8n_workflow.json
 └── README.md
 ```
+</details>
 
 ---
 
 ## ⚡ Быстрый старт
 
-1. **Клонируйте репозиторий:**
-   ```bash
-   git clone https://github.com/zavet-g/complaint-system.git
-   cd complaint-system
-   ```
-
-2. **Создайте и настройте `.env` файл:**
-   ```bash
-   cp env.example .env
-   # Заполните переменные окружения
-   ```
-
-3. **Установите зависимости:**
-   ```bash
-   make install
-   ```
-
-4. **Запустите сервер:**
-   ```bash
-   make run
-   # или в Docker
-   make docker-run
-   ```
-
-5. **Откройте документацию API:**
-   - [http://localhost:8000/docs](http://localhost:8000/docs)
+```bash
+git clone https://github.com/zavet-g/complaint-system.git
+cd complaint-system
+cp env.example .env
+make install
+make run
+# или через Docker
+make docker-run
+```
+- Документация API: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ---
 
 ## 🧪 Тестирование
 
-- Запустить все тесты:
-  ```bash
-  make test
-  ```
-- Запустить отдельные группы тестов:
-  ```bash
-  make test-api
-  make test-unit
-  make test-integration
-  ```
+```bash
+make test           # Все тесты
+make test-api       # Только API
+make test-unit      # Только unit
+make test-integration # Только интеграционные
+```
 
 ---
 
@@ -156,30 +170,58 @@ complaint-system/
 
 ---
 
-## 🤝 Вклад в проект
+## 🧩 Как это работает
 
-1. Сделайте fork репозитория
-2. Создайте ветку (`git checkout -b feature/your-feature`)
-3. Commit изменения (`git commit -m 'Add your feature'`)
-4. Push в ветку (`git push origin feature/your-feature`)
-5. Откройте Pull Request
+```mermaid
+sequenceDiagram
+    participant User
+    participant API
+    participant OpenAI
+    participant APILayer
+    participant Telegram
+    participant GoogleSheets
+
+    User->>API: Отправляет жалобу
+    API->>OpenAI: Категоризация
+    API->>APILayer: Анализ тональности
+    API->>Telegram: Уведомление (если нужно)
+    API->>GoogleSheets: Экспорт (если нужно)
+    API-->>User: Ответ с категорией и статусом
+```
 
 ---
 
-## 📄 Лицензия
+## 🤝 Вклад
 
-Проект распространяется под лицензией MIT. Подробнее см. в файле [LICENSE](LICENSE).
+1. Fork репозитория
+2. Создайте ветку (`git checkout -b feature/your-feature`)
+3. Commit (`git commit -m 'Add your feature'`)
+4. Push (`git push origin feature/your-feature`)
+5. Откройте Pull Request
 
 ---
 
 ## 👤 Автор и связь
 
-**Артём Букарев**  
-Telegram: [@bcdbcddd](https://t.me/bcdbcddd)  
-GitHub: [zavet-g/complaint-system](https://github.com/zavet-g/complaint-system)
+> **Артём Букарев**  
+> Telegram: [@bcdbcddd](https://t.me/bcdbcddd)  
+> GitHub: [zavet-g/complaint-system](https://github.com/zavet-g/complaint-system)
 
 ---
 
 ## ⭐️ Поддержите проект!
 
-Если проект был полезен — поставьте ⭐️ на [GitHub](https://github.com/zavet-g/complaint-system)! 
+Если проект был полезен — поставьте ⭐️ на [GitHub](https://github.com/zavet-g/complaint-system)!
+
+---
+
+## 🎉 Благодарности
+
+<p align="center">
+  <img src="https://img.shields.io/badge/FastAPI-005571?logo=fastapi&logoColor=white"/>
+  <img src="https://img.shields.io/badge/OpenAI-412991?logo=openai&logoColor=white"/>
+  <img src="https://img.shields.io/badge/APILayer-009688?logo=apilayer&logoColor=white"/>
+  <img src="https://img.shields.io/badge/n8n-ef6c00?logo=n8n&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Telegram-26A5E4?logo=telegram&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Google%20Sheets-34A853?logo=google-sheets&logoColor=white"/>
+</p> 
